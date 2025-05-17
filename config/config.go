@@ -9,6 +9,8 @@ type Config struct {
 	CronExpression     string   `yaml:"cron-expression"`
 	SpeedTestUrl       string   `yaml:"speed-test-url"`
 	DownloadTimeout    int      `yaml:"download-timeout"`
+	DownloadMB         int      `yaml:"download-mb"`
+	TotalSpeedLimit    int      `yaml:"total-speed-limit"`
 	MinSpeed           int      `yaml:"min-speed"`
 	Timeout            int      `yaml:"timeout"`
 	FilterRegex        string   `yaml:"filter-regex"`

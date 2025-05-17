@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -15,9 +16,10 @@ import (
 
 	"log/slog"
 
-	"github.com/beck-8/subs-check/check/platfrom"
+	"github.com/beck-8/subs-check/check/platform"
 	"github.com/beck-8/subs-check/config"
 	proxyutils "github.com/beck-8/subs-check/proxy"
+	"github.com/juju/ratelimit"
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/constant"
 )
@@ -51,8 +53,11 @@ type ProxyChecker struct {
 var Progress atomic.Uint32
 var Available atomic.Uint32
 var ProxyCount atomic.Uint32
+var TotalBytes atomic.Int64
 
 var ForceClose atomic.Bool
+
+var Bucket *ratelimit.Bucket
 
 // NewProxyChecker 创建新的检测器实例
 func NewProxyChecker(proxyCount int) *ProxyChecker {
@@ -62,8 +67,6 @@ func NewProxyChecker(proxyCount int) *ProxyChecker {
 	}
 
 	ProxyCount.Store(uint32(proxyCount))
-	Available.Store(0)
-	Progress.Store(0)
 	return &ProxyChecker{
 		results:     make([]Result, 0),
 		proxyCount:  proxyCount,
@@ -81,6 +84,8 @@ func Check() ([]Result, error) {
 	ProxyCount.Store(0)
 	Available.Store(0)
 	Progress.Store(0)
+
+	TotalBytes.Store(0)
 
 	// 之前好的节点前置
 	var proxies []map[string]any
@@ -107,8 +112,14 @@ func Check() ([]Result, error) {
 
 // Run 运行检测流程
 func (pc *ProxyChecker) run(proxies []map[string]any) ([]Result, error) {
+	if config.GlobalConfig.TotalSpeedLimit != 0 {
+		Bucket = ratelimit.NewBucketWithRate(float64(config.GlobalConfig.TotalSpeedLimit*1024*1024), int64(config.GlobalConfig.TotalSpeedLimit*1024*1024/10))
+	} else {
+		Bucket = ratelimit.NewBucketWithRate(float64(math.MaxInt64), int64(math.MaxInt64))
+	}
+
 	slog.Info("开始检测节点")
-	slog.Info(fmt.Sprintf("启动工作线程: %d", pc.threadCount))
+	slog.Info("当前参数", "concurrent", config.GlobalConfig.Concurrent, "min-speed", config.GlobalConfig.MinSpeed, "download-timeout", config.GlobalConfig.DownloadTimeout, "download-mb", config.GlobalConfig.DownloadMB, "total-speed-limit", config.GlobalConfig.TotalSpeedLimit)
 
 	done := make(chan bool)
 	if config.GlobalConfig.PrintProgress {
@@ -149,6 +160,9 @@ func (pc *ProxyChecker) run(proxies []map[string]any) ([]Result, error) {
 		slog.Warn(fmt.Sprintf("达到节点数量限制: %d", config.GlobalConfig.SuccessLimit))
 	}
 	slog.Info(fmt.Sprintf("可用节点数量: %d", len(pc.results)))
+	if config.GlobalConfig.SpeedTestUrl != "" {
+		slog.Info(fmt.Sprintf("测速总消耗流量: %.2fGB", float64(TotalBytes.Load())/1024/1024/1024))
+	}
 	return pc.results, nil
 }
 
@@ -181,38 +195,38 @@ func (pc *ProxyChecker) checkProxy(proxy map[string]any) *Result {
 	}
 	defer httpClient.Close()
 
-	cloudflare, err := platfrom.CheckCloudflare(httpClient.Client)
+	cloudflare, err := platform.CheckCloudflare(httpClient.Client)
 	if err != nil || !cloudflare {
 		return nil
 	}
 
-	google, err := platfrom.CheckGoogle(httpClient.Client)
+	google, err := platform.CheckGoogle(httpClient.Client)
 	if err != nil || !google {
 		return nil
 	}
 
 	if config.GlobalConfig.MediaCheck {
 		// 遍历需要检测的平台
-		for _, platform := range config.GlobalConfig.Platforms {
-			switch platform {
+		for _, plat := range config.GlobalConfig.Platforms {
+			switch plat {
 			case "openai":
-				if ok, _ := platfrom.CheckOpenai(httpClient.Client); ok {
+				if ok, _ := platform.CheckOpenai(httpClient.Client); ok {
 					res.Openai = true
 				}
 			case "youtube":
-				if ok, _ := platfrom.CheckYoutube(httpClient.Client); ok {
+				if ok, _ := platform.CheckYoutube(httpClient.Client); ok {
 					res.Youtube = true
 				}
 			case "netflix":
-				if ok, _ := platfrom.CheckNetflix(httpClient.Client); ok {
+				if ok, _ := platform.CheckNetflix(httpClient.Client); ok {
 					res.Netflix = true
 				}
 			case "disney":
-				if ok, _ := platfrom.CheckDisney(httpClient.Client); ok {
+				if ok, _ := platform.CheckDisney(httpClient.Client); ok {
 					res.Disney = true
 				}
 			case "gemini":
-				if ok, _ := platfrom.CheckGemini(httpClient.Client); ok {
+				if ok, _ := platform.CheckGemini(httpClient.Client); ok {
 					res.Gemini = true
 				}
 			case "iprisk":
@@ -221,7 +235,7 @@ func (pc *ProxyChecker) checkProxy(proxy map[string]any) *Result {
 					res.IP = ip
 					res.Country = country
 				}
-				risk, err := platfrom.CheckIPRisk(httpClient.Client, ip)
+				risk, err := platform.CheckIPRisk(httpClient.Client, ip)
 				if err == nil {
 					res.IPRisk = risk
 				} else {
@@ -233,8 +247,10 @@ func (pc *ProxyChecker) checkProxy(proxy map[string]any) *Result {
 	}
 
 	var speed int
+	var totalBytes int64
 	if config.GlobalConfig.SpeedTestUrl != "" {
-		speed, err = platfrom.CheckSpeed(httpClient.Client)
+		speed, totalBytes, err = platform.CheckSpeed(httpClient.Client, Bucket)
+		TotalBytes.Add(totalBytes)
 		if err != nil || speed < config.GlobalConfig.MinSpeed {
 			return nil
 		}

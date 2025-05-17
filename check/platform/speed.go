@@ -1,17 +1,19 @@
-package platfrom
+package platform
 
 import (
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
 	"log/slog"
 
 	"github.com/beck-8/subs-check/config"
+	"github.com/juju/ratelimit"
 )
 
-func CheckSpeed(httpClient *http.Client) (int, error) {
+func CheckSpeed(httpClient *http.Client, bucket *ratelimit.Bucket) (int, int64, error) {
 	// 创建一个新的测速专用客户端，基于原有客户端的传输层
 	speedClient := &http.Client{
 		// 设置更长的超时时间用于测速
@@ -23,17 +25,27 @@ func CheckSpeed(httpClient *http.Client) (int, error) {
 	resp, err := speedClient.Get(config.GlobalConfig.SpeedTestUrl)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("测速请求失败: %v", err))
-		return 0, err
+		return 0, 0, err
 	}
 	defer resp.Body.Close()
 
 	var totalBytes int64
+	var limitSize int64
 	startTime := time.Now()
 
-	totalBytes, err = io.Copy(io.Discard, resp.Body)
+	// 下载速度限制
+	bucketReader := ratelimit.Reader(resp.Body, bucket)
+	// 根据配置决定是否限制下载大小
+	if config.GlobalConfig.DownloadMB > 0 {
+		limitSize = int64(config.GlobalConfig.DownloadMB) * 1024 * 1024
+	} else {
+		limitSize = math.MaxInt64
+	}
+	limitedReader := io.LimitReader(bucketReader, limitSize)
+	totalBytes, err = io.Copy(io.Discard, limitedReader)
 	if err != nil && totalBytes == 0 {
 		slog.Debug(fmt.Sprintf("totalBytes: %d, 读取数据时发生错误: %v", totalBytes, err))
-		return 0, err
+		return 0, 0, err
 	}
 
 	// 计算下载时间（毫秒）
@@ -45,5 +57,5 @@ func CheckSpeed(httpClient *http.Client) (int, error) {
 	// 计算速度（KB/s）
 	speed := int(float64(totalBytes) / 1024 * 1000 / float64(duration))
 
-	return speed, nil
+	return speed, totalBytes, nil
 }
