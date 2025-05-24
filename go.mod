@@ -11,8 +11,8 @@ require (
 )
 
 require (
-	github.com/metacubex/bart v0.19.0 // indirect
-	github.com/metacubex/sing v0.5.3-0.20250504031621-1f99e54c15b7 // indirect
+	github.com/metacubex/bart v0.20.5 // indirect
+	github.com/metacubex/sing v0.5.3 // indirect
 	github.com/metacubex/sing-mux v0.3.2 // indirect
 	github.com/metacubex/sing-shadowtls v0.0.0-20250503063515-5d9f966d17a2 // indirect
 	github.com/metacubex/smux v0.0.0-20250503055512-501391591dee // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/coreos/go-iptables v0.8.0 // indirect
 	github.com/docker/go-units v0.5.0
-	github.com/ebitengine/purego v0.8.3-0.20250507171810-1638563e3615 // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
 	github.com/enfein/mieru/v3 v3.13.0 // indirect
 	github.com/ericlagergren/aegis v0.0.0-20250325060835-cd0defd64358 // indirect
 	github.com/ericlagergren/polyval v0.0.0-20220411101811-e25bc10ba391 // indirect
@@ -74,14 +74,14 @@ require (
 	github.com/metacubex/chacha v0.1.2 // indirect
 	github.com/metacubex/gopacket v1.1.20-0.20230608035415-7e2f98a3e759 // indirect
 	github.com/metacubex/gvisor v0.0.0-20250324165734-5857f47bd43b // indirect
-	github.com/metacubex/quic-go v0.51.1-0.20250511032541-4e34341cf18b // indirect
+	github.com/metacubex/quic-go v0.52.1-0.20250522021943-aef454b9e639 // indirect
 	github.com/metacubex/randv2 v0.2.0 // indirect
-	github.com/metacubex/sing-quic v0.0.0-20250511034158-b46e0e3e81b2 // indirect
+	github.com/metacubex/sing-quic v0.0.0-20250523120938-f1a248e5ec7f // indirect
 	github.com/metacubex/sing-shadowsocks v0.2.9 // indirect
 	github.com/metacubex/sing-shadowsocks2 v0.2.3 // indirect
 	github.com/metacubex/sing-vmess v0.2.1 // indirect
 	github.com/metacubex/sing-wireguard v0.0.0-20250503063753-2dc62acc626f // indirect
-	github.com/metacubex/tfo-go v0.0.0-20250503140532-decbcfccbfdf // indirect
+	github.com/metacubex/tfo-go v0.0.0-20250516165257-e29c16ae41d4 // indirect
 	github.com/metacubex/utls v1.7.3 // indirect
 	github.com/metacubex/wireguard-go v0.0.0-20240922131502-c182e7471181 // indirect
 	github.com/miekg/dns v1.1.63 // indirect
@@ -128,4 +128,4 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
-replace github.com/metacubex/mihomo => github.com/beck-8/mihomo v1.19.5-0.20250517075509-9a8c29a9f58c
+replace github.com/metacubex/mihomo => github.com/beck-8/mihomo v1.19.9-fix.0.20250523134706-9eba9a2dbf3c

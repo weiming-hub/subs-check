@@ -161,7 +161,7 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			lastErr = err
+			lastErr = fmt.Errorf("读取订阅链接: %s 数据错误: %v", subUrl, err)
 			continue
 		}
 		return body, nil

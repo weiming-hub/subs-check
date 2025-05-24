@@ -277,14 +277,12 @@ func (pc *ProxyChecker) updateProxyName(res *Result, httpClient *ProxyClient, sp
 	}
 
 	name := res.Proxy["name"].(string)
-
-	// 移除所有已有的标记（包括速度、IPRisk和平台标记）
-	name = regexp.MustCompile(`\s*\|(?:Netflix|Disney|Youtube|Openai|Gemini|\d+%|\s*⬇️\s*[\d.]+[KM]B/s)`).ReplaceAllString(name, "")
 	name = strings.TrimSpace(name)
 
 	var tags []string
 	// 获取速度
 	if config.GlobalConfig.SpeedTestUrl != "" {
+		name = regexp.MustCompile(`\s*\|(?:\s*⬇️\s*[\d.]+[KM]B/s)`).ReplaceAllString(name, "")
 		var speedStr string
 		if speed < 1024 {
 			speedStr = fmt.Sprintf(" ⬇️ %dKB/s", speed)
@@ -294,6 +292,10 @@ func (pc *ProxyChecker) updateProxyName(res *Result, httpClient *ProxyClient, sp
 		tags = append(tags, speedStr)
 	}
 
+	if config.GlobalConfig.MediaCheck {
+		// 移除已有的标记（IPRisk和平台标记）
+		name = regexp.MustCompile(`\s*\|(?:Netflix|Disney|Youtube|Openai|Gemini|\d+%)`).ReplaceAllString(name, "")
+	}
 	// 添加其他标记
 	if res.IPRisk != "" {
 		tags = append(tags, res.IPRisk)
