@@ -1,0 +1,34 @@
+name: Sync from Upstream
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/beck-8/subs-check.git
+          git fetch upstream --tags
+
+      - name: Merge upstream/master into current branch
+        run: |
+          git checkout master
+          git merge upstream/master --no-edit
+
+      - name: Push changes and tags
+        run: |
+          git push origin master
+          git push origin --tags

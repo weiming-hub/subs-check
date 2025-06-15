@@ -8,39 +8,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs/editor/editor.main.css" rel="stylesheet">
     <style>
-        body { padding: 20px; }
+        body { padding: 15px; }
+        
+        /* 编辑器样式 - 使用动态高度计算 */
         #editor { 
-            height: 622px;
+            height: calc(100vh - 335px); /* 调整高度使其等于日志容器+进度条区域的总高度 */
+            min-height: 300px;
             border: 1px solid #ddd;
             margin-bottom: 0;
         }
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            #editor { height: 472px; }
-            .status-item {
-                margin-bottom: 10px;
-            }
-            .logs-container {
-                height: 300px;
-            }
-            /* 在手机上的样式 */
-            .config-path {
-                max-width: 100%;
-                white-space: normal;
-                word-break: break-all;
-                font-size: 0.85em;
-            }
-        }
-        @media (min-width: 768px) {
-            .config-path {
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-        }
-        .card { margin-bottom: 20px; }
+        
+        /* 日志容器样式 - 使用动态高度计算 */
         .logs-container {
-            height: 550px;
+            height: calc(100vh - 400px);
+            min-height: 300px;
             overflow-y: auto;
             background-color: #f8f9fa;
             padding: 10px;
@@ -50,68 +31,119 @@
             border: 1px solid #ddd;
             margin-bottom: 0;
         }
+        
+        /* 响应式调整 */
+        @media (max-width: 991px) {
+            body { padding: 10px; }
+            #editor { height: calc(100vh - 285px); } /* 调整编辑器高度 */
+            .logs-container { height: calc(100vh - 350px); }
+            .card-header { padding: 0.5rem 0.75rem; }
+            .card-body { padding: 0.75rem; }
+            .card { margin-bottom: 15px; }
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 8px; }
+            #editor { height: 420px; } /* 调整编辑器高度 */
+            .logs-container { height: 350px; }
+            .status-item { margin-bottom: 8px; }
+            .config-path {
+                max-width: 100%;
+                white-space: normal;
+                word-break: break-all;
+                font-size: 0.85em;
+            }
+            .card { margin-bottom: 12px; }
+            .progress-section { padding: 10px; }
+        }
+        
+        /* 大屏幕优化 */
+        @media (min-width: 1600px) {
+            #editor { height: calc(100vh - 385px); } /* 调整编辑器高度 */
+            .logs-container { height: calc(100vh - 450px); }
+        }
+        
+        .card { margin-bottom: 15px; }
+        
         /* 日志颜色样式 */
         .log-info { color: #28a745; }    /* 绿色 */
         .log-error { color: #dc3545; }   /* 红色 */
         .log-warn { color: #ffc107; }    /* 黄色 */
         .log-debug { color: #17a2b8; }   /* 青色 */
         .log-time { color: #6c757d; }    /* 灰色 */
+        
         .status-bar {
             background-color: #f8f9fa;
             padding: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-radius: 4px;
             border: 1px solid #ddd;
         }
+        
         .config-path {
             white-space: normal;
             word-break: break-all;
         }
+        
         .api-key-form {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
+        
         .btn {
-            padding: 6px 12px;
+            padding: 5px 10px;
             font-size: 0.875rem;
         }
+        
         .btn-sm {
-            padding: 4px 8px;
+            padding: 3px 7px;
             font-size: 0.75rem;
         }
+        
         .alert {
+            padding: 0.75rem 1rem;
+            margin-bottom: 15px;
             border: none;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        
         .alert-info {
             background-color: #e8f4fd;
             color: #0c5460;
         }
+        
         .alert-info a {
             color: #0c5460;
             text-decoration: underline;
         }
+        
         .form-control {
             border-radius: 4px;
             border: 1px solid #ddd;
         }
+        
         .form-control:focus {
             border-color: #80bdff;
             box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
+        
         h1 {
             color: #333;
             font-size: 1.75rem;
             font-weight: 600;
+            margin-bottom: 0.5rem;
         }
+        
         /* 旋转动画 */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
         .rotate-animation {
             animation: spin 1s linear infinite;
             display: inline-block;
         }
+        
         /* 配置编辑器蒙版 */
         .editor-overlay {
             position: absolute;
@@ -128,6 +160,7 @@
             align-items: center;
             cursor: pointer;
         }
+        
         .editor-overlay-message {
             background-color: rgba(255, 255, 255, 0.5);
             color: #333;
@@ -138,28 +171,34 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
         }
+        
         .editor-wrapper {
             position: relative;
         }
+        
         /* 进度条样式 */
         .progress-section {
-            padding: 15px;
+            padding: 12px;
             background-color: #f8f9fa;
             border-top: 1px solid #ddd;
         }
+        
         .progress-info {
             display: flex;
             justify-content: space-between;
             margin-bottom: 5px;
             font-size: 14px;
         }
+        
         .progress {
             height: 15px;
             position: relative;
         }
+        
         .progress-bar {
             transition: width 0.5s ease;
         }
+        
         .progress-bar-success {
             background-color: #28a745; /* 成功的进度条使用绿色 */
             position: absolute;
@@ -170,6 +209,7 @@
             box-shadow: 0 0 8px #28a745; /* 添加发光效果 */
             border-radius: 0 4px 4px 0; /* 右侧圆角 */
         }
+        
         .progress-bar-total {
             background-color: rgba(23, 162, 184, 0.5); /* 总进度条使用半透明青色 */
             position: absolute;
@@ -178,12 +218,14 @@
             top: 0;
             z-index: 5;
         }
+        
         /* 闪烁效果 */
         @keyframes pulse {
             0% { opacity: 0.6; }
             50% { opacity: 1; }
             100% { opacity: 0.6; }
         }
+        
         .success-highlight {
             animation: pulse 1.5s infinite;
             font-weight: bold;
@@ -196,10 +238,17 @@
 </head>
 <body>
     <div class="container-fluid">
-        <h1 class="mb-4">Subs Check 配置管理</h1>
+        <div class="row align-items-center mb-3">
+            <div class="col-md-8 col-sm-12">
+                <h1 class="mb-0">Subs Check 配置管理</h1>
+            </div>
+            <div class="col-md-4 col-sm-12 text-md-end">
+                <small class="text-muted" id="versionInfo">版本: 加载中...</small>
+            </div>
+        </div>
         
         <!-- 项目信息 -->
-        <div class="alert alert-info mb-4 d-flex justify-content-between align-items-center">
+        <div class="alert alert-info mb-3 d-flex justify-content-between align-items-center">
             <div>
                 <i class="bi bi-github me-2"></i>项目地址: 
                 <a href="https://github.com/beck-8/subs-check" target="_blank" class="text-break">https://github.com/beck-8/subs-check</a>
@@ -211,7 +260,7 @@
 
         <!-- API密钥输入表单 -->
         <div class="card api-key-form">
-            <div class="card-body">
+            <div class="card-body py-2">
                 <div class="row align-items-center">
                     <div class="col-md-3 col-sm-12 mb-sm-2">
                         <label for="apiKey" class="form-label mb-0"><strong>API密钥:</strong></label>
@@ -231,6 +280,7 @@
             </div>
         </div>
         
+        <!-- 状态栏 -->
         <div class="status-bar">
             <div class="row">
                 <div class="col-md-5 col-sm-12 status-item">
@@ -255,7 +305,9 @@
             </div>
         </div>
         
+        <!-- 主要内容区域 -->
         <div class="row">
+            <!-- 左侧日志区域 -->
             <div class="col-lg-5 col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -287,6 +339,7 @@
                 </div>
             </div>
             
+            <!-- 右侧配置编辑器 -->
             <div class="col-lg-7 col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -296,9 +349,11 @@
                                 <button id="toggleConfig" class="btn btn-outline-secondary btn-sm me-2" title="显示/隐藏配置">
                                     <i class="bi bi-eye-slash"></i>
                                 </button>
-                                <button id="saveConfig" class="btn btn-success btn-sm">保存配置</button>
+                                <button id="saveConfig" class="btn btn-success btn-sm">
+                                    <i class="bi bi-save me-1"></i>保存
+                                </button>
                                 <button id="reloadConfig" class="btn btn-secondary btn-sm ms-2">
-                                    <i class="bi bi-arrow-repeat me-1"></i>重新加载
+                                    <i class="bi bi-arrow-repeat me-1"></i>重载
                                 </button>
                             </div>
                         </div>
@@ -317,6 +372,9 @@
             </div>
         </div>
     </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Monaco Editor -->
     <script>var require = { paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs' } };</script>
@@ -807,6 +865,26 @@
         // 定时刷新
         setInterval(loadLogs, 10000);
         setInterval(updateStatus, 5000);
+        
+        // 获取版本信息
+        function getVersionInfo() {
+            fetch('/api/version', {
+                headers: addApiKeyHeader()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.version) {
+                    document.getElementById('versionInfo').textContent = '版本: ' + data.version;
+                }
+            })
+            .catch(error => {
+                console.error('获取版本信息失败:', error);
+                document.getElementById('versionInfo').textContent = '版本: 未知';
+            });
+        }
+        
+        // 初始加载版本信息
+        getVersionInfo();
     </script>
     
     <!-- YAML解析库 -->

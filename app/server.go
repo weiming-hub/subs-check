@@ -56,7 +56,7 @@ func (app *App) initHttpServer() error {
 
 		// API路由
 		api := router.Group("/api")
-		api.Use(app.authMiddleware()) // 添加认证中间件
+		api.Use(app.authMiddleware(config.GlobalConfig.APIKey)) // 添加认证中间件
 		{
 			// 配置相关API
 			api.GET("/config", app.getConfig)
@@ -66,6 +66,8 @@ func (app *App) initHttpServer() error {
 			api.GET("/status", app.getStatus)
 			api.POST("/trigger-check", app.triggerCheckHandler)
 			api.POST("/force-close", app.forceCloseHandler)
+			// 版本相关API
+			api.GET("/version", app.getVersion)
 
 			// 日志相关API
 			api.GET("/logs", app.getLogs)
@@ -95,10 +97,10 @@ func (app *App) initHttpServer() error {
 }
 
 // authMiddleware API认证中间件
-func (app *App) authMiddleware() gin.HandlerFunc {
+func (app *App) authMiddleware(key string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("X-API-Key")
-		if subtle.ConstantTimeCompare([]byte(apiKey), []byte(config.GlobalConfig.APIKey)) != 1 {
+		if subtle.ConstantTimeCompare([]byte(apiKey), []byte(key)) != 1 {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "无效的API密钥"})
 			return
 		}
@@ -183,6 +185,11 @@ func (app *App) getLogs(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"logs": lines})
+}
+
+// getLogs 获取最近日志
+func (app *App) getVersion(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"version": app.version})
 }
 
 func ReadLastNLines(filePath string, n int) ([]string, error) {
