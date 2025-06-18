@@ -302,7 +302,7 @@ http://127.0.0.1:8299/download/sub?target=V2Ray
 http://127.0.0.1:8299/download/sub?target=ShadowRocket
 
 # Quantumult订阅
-http://127.0.0.1:8299/download/sub?target=Quantumult
+http://127.0.0.1:8299/download/sub?target=QX
 
 # sing-box订阅
 http://127.0.0.1:8299/download/sub?target=sing-box

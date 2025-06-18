@@ -31,6 +31,7 @@ type Config struct {
 	S3BucketLookup     string   `yaml:"s3-bucket-lookup"`
 	SubUrlsReTry       int      `yaml:"sub-urls-retry"`
 	SubUrls            []string `yaml:"sub-urls"`
+	SuccessRate        float32  `yaml:"success-rate"`
 	MihomoApiUrl       string   `yaml:"mihomo-api-url"`
 	MihomoApiSecret    string   `yaml:"mihomo-api-secret"`
 	ListenPort         string   `yaml:"listen-port"`
