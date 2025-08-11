@@ -1,6 +1,6 @@
 # sub-store 后端使用教程
 
-> 当你打开`http://127.0.0.1:8299`，你发现跳转到了`https://sub-store.vercel.app/subs`
+> ~~当你打开`http://127.0.0.1:8299`，你发现跳转到了`https://sub-store.vercel.app/subs`~~ 新版已经变化了
 
 > 不要惊慌！不要惊慌！不要惊慌！
 
@@ -50,9 +50,16 @@
 # sub-store自定义访问路径，必须以/开头，后续访问订阅也要带上此路径
 # 设置path之后，还可以开启订阅分享功能，无需暴露真实的path
 # sub-store-path: "/path"
-sub-store-path: "diypath"
+sub-store-path: "/diypath"
 ```
 访问路径变成`http://127.0.0.1:8299/diypath`
 
 ![步骤十](./images/sub-store10.png)
 ![步骤十一](./images/sub-store11.png)
+
+## sub-store 新版特性
+sub-store 后端版本 2.19.97 之后支持 github 代理（sub-store 同步文件和备份\恢复配置时使用），如出现 token 错误，请检查 githubproxy
+
+> 后端需 >= 2.19.97： 1. 仅用于上传/下载 Gist 和获取 GitHub 头像；2. 请填写完整 如 https://a.com ；3. 需同时支持代理 https://api.github.com/users/* 和 https://api.github.com/gists ，测试方式：浏览器打开 https://a.com/https://api.github.com/gists?per_page=1&page=1 和 https://a.com/https://api.github.com/users/xream 有正常的响应。 
+
+> 使用此方式时，自行注意安全隐私问题！

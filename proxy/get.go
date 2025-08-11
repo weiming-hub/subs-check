@@ -3,19 +3,17 @@ package proxies
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	u "net/url"
 	"sync"
 	"time"
-
-	"log/slog"
 
 	"github.com/beck-8/subs-check/config"
 	"github.com/beck-8/subs-check/utils"
 	"github.com/metacubex/mihomo/common/convert"
 	"gopkg.in/yaml.v3"
 )
-
-// var proxyRegex = regexp.MustCompile("(ssr|ss|vmess|trojan|vless|hysteria|hy2|hysteria2)://")
 
 func GetProxies() ([]map[string]any, error) {
 	slog.Info(fmt.Sprintf("当前设置订阅链接数量: %d", len(config.GlobalConfig.SubUrls)))
@@ -49,33 +47,14 @@ func GetProxies() ([]map[string]any, error) {
 				return
 			}
 
+			var tag string
+			if d, err := u.Parse(url); err == nil {
+				tag = d.Fragment
+			}
+
 			var con map[string]any
 			err = yaml.Unmarshal(data, &con)
 			if err != nil {
-				// if !proxyRegex.Match(data) {
-				// 	data = []byte(parser.DecodeBase64(string(data)))
-				// }
-				// if proxyRegex.Match(data) {
-				// 	scanner := bufio.NewScanner(strings.NewReader(string(data)))
-				// 	for scanner.Scan() {
-				// 		proxy := scanner.Text()
-				// 		if proxy == "" {
-				// 			continue
-				// 		}
-				// 		parseProxy, err := ParseProxy(proxy)
-				// 		if err != nil {
-				// 			slog.Debug(fmt.Sprintf("解析proxy错误: %s , %v", proxy, err))
-				// 			continue
-				// 		}
-				// 		if parseProxy != nil {
-				// 			proxyChan <- parseProxy
-				// 		}
-				// 	}
-				// 	if err := scanner.Err(); err != nil {
-				// 		slog.Error(fmt.Sprintf("扫描数据时发生错误: %v", err))
-				// 	}
-				// 	return
-				// }
 				proxyList, err := convert.ConvertsV2Ray(data)
 				if err != nil {
 					slog.Error(fmt.Sprintf("解析proxy错误: %v", err), "url", url)
@@ -83,8 +62,9 @@ func GetProxies() ([]map[string]any, error) {
 				}
 				slog.Debug(fmt.Sprintf("获取订阅链接: %s，有效节点数量: %d", url, len(proxyList)))
 				for _, proxy := range proxyList {
-					// 为每个节点添加订阅链接来源信息
-					proxy["subscription_url"] = url
+					// 为每个节点添加订阅链接来源信息和备注
+					proxy["sub_url"] = url
+					proxy["sub_tag"] = tag
 					proxyChan <- proxy
 				}
 				return
@@ -112,8 +92,9 @@ func GetProxies() ([]map[string]any, error) {
 							delete(proxyMap, "obfs_password")
 						}
 					}
-					// 为每个节点添加订阅链接来源信息
-					proxyMap["subscription_url"] = url
+					// 为每个节点添加订阅链接来源信息和备注
+					proxyMap["sub_url"] = url
+					proxyMap["sub_tag"] = tag
 					proxyChan <- proxyMap
 				}
 			}
@@ -131,15 +112,25 @@ func GetProxies() ([]map[string]any, error) {
 // 订阅链接中获取数据
 func GetDateFromSubs(subUrl string) ([]byte, error) {
 	maxRetries := config.GlobalConfig.SubUrlsReTry
+	// 重试间隔
+	retryInterval := config.GlobalConfig.SubUrlsRetryInterval
+	if retryInterval == 0 {
+		retryInterval = 1
+	}
+	// 超时时间
+	timeout := config.GlobalConfig.SubUrlsTimeout
+	if timeout == 0 {
+		timeout = 10
+	}
 	var lastErr error
 
 	client := &http.Client{
-		Timeout: time.Duration(10) * time.Second,
+		Timeout: time.Duration(timeout) * time.Second,
 	}
 
 	for i := 0; i < maxRetries; i++ {
 		if i > 0 {
-			time.Sleep(time.Second)
+			time.Sleep(time.Duration(retryInterval) * time.Second)
 		}
 
 		req, err := http.NewRequest("GET", subUrl, nil)
@@ -147,10 +138,8 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 			lastErr = err
 			continue
 		}
-		// 如果走clash，那么输出base64的时候还要更改每个类型的key，所以不能走，以后都走URI
-		// 如果用户想使用clash源，那可以在订阅链接结尾加上 &flag=clash.meta
-		// 模拟用户访问，防止被屏蔽
-		req.Header.Set("User-Agent", convert.RandUserAgent())
+
+		req.Header.Set("User-Agent", "clash.meta")
 
 		resp, err := client.Do(req)
 		if err != nil {

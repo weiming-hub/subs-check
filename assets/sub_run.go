@@ -144,11 +144,26 @@ func startSubStore() error {
 	}
 
 	// 增加body限制，默认1M
-	cmd.Env = append(cmd.Env, "SUB_STORE_BODY_JSON_LIMIT=10mb")
+	cmd.Env = append(cmd.Env, "SUB_STORE_BODY_JSON_LIMIT=30mb")
 	// 增加自定义访问路径
 	if config.GlobalConfig.SubStorePath != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("SUB_STORE_FRONTEND_BACKEND_PATH=%s", config.GlobalConfig.SubStorePath))
 		cmd.Env = append(cmd.Env, "SUB_STORE_BACKEND_MERGE=1")
+	}
+
+	// sub-store 环境变量: 后端上传文件至 gist
+	if config.GlobalConfig.SubStoreSyncCron != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("SUB_STORE_BACKEND_SYNC_CRON=%s", config.GlobalConfig.SubStoreSyncCron))
+	}
+
+	// sub-store 环境变量: 自动拉取订阅内容
+	if config.GlobalConfig.SubStoreProduceCron != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("SUB_STORE_PRODUCE_CRON=%s", config.GlobalConfig.SubStoreProduceCron))
+	}
+
+	// sub-store 环境变量: 当遇到错误时发送通知
+	if config.GlobalConfig.SubStorePushService != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("SUB_STORE_PUSH_SERVICE=%s", config.GlobalConfig.SubStorePushService))
 	}
 
 	if err := cmd.Start(); err != nil {
