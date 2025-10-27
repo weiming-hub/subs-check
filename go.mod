@@ -5,7 +5,7 @@ go 1.24.3
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gin-gonic/gin v1.10.1
-	github.com/metacubex/mihomo v1.19.14
+	github.com/metacubex/mihomo v1.19.15
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/robfig/cron/v3 v3.0.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -21,7 +21,7 @@ require (
 	github.com/metacubex/ascon v0.1.0 // indirect
 	github.com/metacubex/bart v0.24.0 // indirect
 	github.com/metacubex/blake3 v0.1.0 // indirect
-	github.com/metacubex/kcp-go v0.0.0-20250923001605-1ba6f691c45b // indirect
+	github.com/metacubex/kcp-go v0.0.0-20251007183319-0df1aec1639a // indirect
 	github.com/metacubex/restls-client-go v0.1.7 // indirect
 	github.com/metacubex/sing v0.5.6 // indirect
 	github.com/metacubex/sing-mux v0.3.4 // indirect
@@ -84,15 +84,15 @@ require (
 	github.com/metacubex/chacha v0.1.5 // indirect
 	github.com/metacubex/gopacket v1.1.20-0.20230608035415-7e2f98a3e759 // indirect
 	github.com/metacubex/gvisor v0.0.0-20250919004547-6122b699a301 // indirect
-	github.com/metacubex/quic-go v0.54.1-0.20250730114134-a1ae705fe295 // indirect
+	github.com/metacubex/quic-go v0.55.1-0.20251004050223-450bd9e32033 // indirect
 	github.com/metacubex/randv2 v0.2.0 // indirect
-	github.com/metacubex/sing-quic v0.0.0-20250909002258-06122df8f231 // indirect
+	github.com/metacubex/sing-quic v0.0.0-20251004051927-c45ee18473bb // indirect
 	github.com/metacubex/sing-shadowsocks v0.2.12 // indirect
 	github.com/metacubex/sing-shadowsocks2 v0.2.7 // indirect
 	github.com/metacubex/sing-vmess v0.2.4 // indirect
 	github.com/metacubex/sing-wireguard v0.0.0-20250503063753-2dc62acc626f // indirect
 	github.com/metacubex/tfo-go v0.0.0-20250921095601-b102db4216c0 // indirect
-	github.com/metacubex/utls v1.8.1 // indirect
+	github.com/metacubex/utls v1.8.2 // indirect
 	github.com/metacubex/wireguard-go v0.0.0-20250820062549-a6cecdd7f57f // indirect
 	github.com/miekg/dns v1.1.67 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

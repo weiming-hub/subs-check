@@ -3,6 +3,7 @@ package proxies
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -23,8 +24,8 @@ import (
 func GetProxies() ([]map[string]any, error) {
 
 	// 解析本地与远程订阅清单
-	subUrls := resolveSubUrls()
-	slog.Info("订阅链接数量", "本地", len(config.GlobalConfig.SubUrls), "远程", len(config.GlobalConfig.SubUrlsRemote), "总计", len(subUrls))
+	subUrls, localNum, remoteNum := resolveSubUrls()
+	slog.Info("订阅链接数量", "本地", localNum, "远程", remoteNum, "总计", len(subUrls))
 
 	if len(config.GlobalConfig.NodeType) > 0 {
 		slog.Info("只筛选用户设置的协议", "type", config.GlobalConfig.NodeType)
@@ -136,7 +137,11 @@ func GetProxies() ([]map[string]any, error) {
 
 // from 3k
 // resolveSubUrls 合并本地与远程订阅清单并去重
-func resolveSubUrls() []string {
+func resolveSubUrls() ([]string, int, int) {
+	// 计数
+	var localNum, remoteNum int
+	localNum = len(config.GlobalConfig.SubUrls)
+
 	urls := make([]string, 0, len(config.GlobalConfig.SubUrls))
 	// 本地配置
 	urls = append(urls, config.GlobalConfig.SubUrls...)
@@ -147,6 +152,7 @@ func resolveSubUrls() []string {
 			if remote, err := fetchRemoteSubUrls(utils.WarpUrl(d)); err != nil {
 				slog.Warn("获取远程订阅清单失败，已忽略", "err", err)
 			} else {
+				remoteNum += len(remote)
 				urls = append(urls, remote...)
 			}
 		}
@@ -167,7 +173,7 @@ func resolveSubUrls() []string {
 		seen[s] = struct{}{}
 		out = append(out, s)
 	}
-	return out
+	return out, localNum, remoteNum
 }
 
 // fetchRemoteSubUrls 从远程地址读取订阅URL清单
@@ -222,6 +228,17 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 
 	client := &http.Client{
 		Timeout: time.Duration(timeout) * time.Second,
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
 
 	for i := 0; i < maxRetries; i++ {
@@ -235,7 +252,11 @@ func GetDateFromSubs(subUrl string) ([]byte, error) {
 			continue
 		}
 
-		req.Header.Set("User-Agent", "clash.meta")
+		if config.GlobalConfig.SubUrlsGetUA == "random" {
+			req.Header.Set("User-Agent", convert.RandUserAgent())
+		} else {
+			req.Header.Set("User-Agent", config.GlobalConfig.SubUrlsGetUA)
+		}
 
 		resp, err := client.Do(req)
 		if err != nil {

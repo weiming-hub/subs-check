@@ -199,12 +199,7 @@ func (pc *ProxyChecker) checkProxy(proxy map[string]any) *Result {
 	}
 	defer httpClient.Close()
 
-	cloudflare, err := platform.CheckCloudflare(httpClient.Client)
-	if err != nil || !cloudflare {
-		return nil
-	}
-
-	google, err := platform.CheckGoogle(httpClient.Client)
+	google, err := platform.CheckAlive(httpClient.Client)
 	if err != nil || !google {
 		return nil
 	}
@@ -405,6 +400,11 @@ func (pc *ProxyChecker) distributeProxies(proxies []map[string]any) {
 		}
 		pc.tasks <- proxy
 	}
+	// // 发送任务结束，进行一次内存回收
+	// for i := range proxies {
+	// 	proxies[i] = nil // 移除 map 引用
+	// }
+	// proxies = nil // 移除切片引用
 	close(pc.tasks)
 }
 
@@ -514,11 +514,13 @@ func CreateClient(mapping map[string]any) *ProxyClient {
 // Close closes the proxy client and cleans up resources
 // 防止底层库有一些泄露，所以这里手动关闭
 func (pc *ProxyClient) Close() {
-	if pc.Client != nil {
-		pc.Client.CloseIdleConnections()
-	}
+	// 无用
+	// if pc.Client != nil {
+	// 	pc.Client.CloseIdleConnections()
+	// }
 
 	// 即使这里不关闭，底层GC的时候也会自动关闭
+	// 这里及时的关闭，方便内存回收
 	if pc.proxy != nil {
 		pc.proxy.Close()
 	}
@@ -526,6 +528,13 @@ func (pc *ProxyClient) Close() {
 
 	if pc.Transport != nil {
 		TotalBytes.Add(atomic.LoadUint64(&pc.Transport.BytesRead))
+		// 手动关闭transport，此处非常重要
+		// 如果没有此处，链接不会释放，goroutine会一直占用，内存会溢出
+		if pc.Transport.Base != nil {
+			if transport, ok := pc.Transport.Base.(*http.Transport); ok {
+				transport.CloseIdleConnections()
+			}
+		}
 	}
 	pc.Transport = nil
 }

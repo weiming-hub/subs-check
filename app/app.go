@@ -70,7 +70,12 @@ func (app *App) Initialize() error {
 		os.Setenv("HTTPS_PROXY", config.GlobalConfig.Proxy)
 	}
 
-	app.interval = config.GlobalConfig.CheckInterval
+	app.interval = func() int {
+		if config.GlobalConfig.CheckInterval <= 0 {
+			return 1
+		}
+		return config.GlobalConfig.CheckInterval
+	}()
 
 	if config.GlobalConfig.ListenPort != "" {
 		if err := app.initHttpServer(); err != nil {
