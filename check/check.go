@@ -3,7 +3,6 @@ package check
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"math"
 	"net"
@@ -206,7 +205,7 @@ func (pc *ProxyChecker) checkProxy(proxy map[string]any) *Result {
 
 	var speed int
 	if config.GlobalConfig.SpeedTestUrl != "" {
-		speed, _, err = platform.CheckSpeed(httpClient.Client, Bucket)
+		speed, _, err = platform.CheckSpeed(httpClient.Client, Bucket, httpClient.BytesRead)
 		if err != nil || speed < config.GlobalConfig.MinSpeed {
 			return nil
 		}
@@ -441,7 +440,8 @@ func (pc *ProxyChecker) checkSubscriptionSuccessRate(allProxies []map[string]any
 				subStats[subUrl] = stats
 			}
 			delete(result.Proxy, "sub_url")
-			delete(result.Proxy, "sub_tag")
+			// 可以保持127.0.0.1:8199/sub/all.yaml中的节点tag
+			// delete(result.Proxy, "sub_tag")
 		}
 	}
 
@@ -466,11 +466,30 @@ func (pc *ProxyChecker) checkSubscriptionSuccessRate(allProxies []map[string]any
 	}
 }
 
+// statsConn wraps net.Conn to count bytes read and apply rate limiting
+type statsConn struct {
+	net.Conn
+	bytesRead *uint64
+	bucket    *ratelimit.Bucket
+}
+
+func (c *statsConn) Read(b []byte) (n int, err error) {
+	// 速度限制（全局）
+	if c.bucket != nil {
+		c.bucket.Wait(int64(len(b)))
+	}
+
+	n, err = c.Conn.Read(b)
+	atomic.AddUint64(c.bytesRead, uint64(n))
+
+	return n, err
+}
+
 // CreateClient creates and returns an http.Client with a Close function
 type ProxyClient struct {
 	*http.Client
 	proxy     constant.Proxy
-	Transport *StatsTransport
+	BytesRead *uint64
 }
 
 func CreateClient(mapping map[string]any) *ProxyClient {
@@ -480,6 +499,7 @@ func CreateClient(mapping map[string]any) *ProxyClient {
 		return nil
 	}
 
+	var bytesRead uint64
 	baseTransport := &http.Transport{
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			host, port, err := net.SplitHostPort(addr)
@@ -490,34 +510,38 @@ func CreateClient(mapping map[string]any) *ProxyClient {
 			if port, err := strconv.ParseUint(port, 10, 16); err == nil {
 				u16Port = uint16(port)
 			}
-			return proxy.DialContext(ctx, &constant.Metadata{
+			conn, err := proxy.DialContext(ctx, &constant.Metadata{
 				Host:    host,
 				DstPort: u16Port,
 			})
+			if err != nil {
+				return nil, err
+			}
+			return &statsConn{
+				Conn:      conn,
+				bytesRead: &bytesRead,
+				bucket:    Bucket,
+			}, nil
 		},
 		DisableKeepAlives: true,
 	}
 
-	statsTransport := &StatsTransport{
-		Base: baseTransport,
-	}
 	return &ProxyClient{
 		Client: &http.Client{
 			Timeout:   time.Duration(config.GlobalConfig.Timeout) * time.Millisecond,
-			Transport: statsTransport,
+			Transport: baseTransport,
 		},
 		proxy:     proxy,
-		Transport: statsTransport,
+		BytesRead: &bytesRead,
 	}
 }
 
 // Close closes the proxy client and cleans up resources
 // 防止底层库有一些泄露，所以这里手动关闭
 func (pc *ProxyClient) Close() {
-	// 无用
-	// if pc.Client != nil {
-	// 	pc.Client.CloseIdleConnections()
-	// }
+	if pc.Client != nil {
+		pc.Client.CloseIdleConnections()
+	}
 
 	// 即使这里不关闭，底层GC的时候也会自动关闭
 	// 这里及时的关闭，方便内存回收
@@ -526,44 +550,7 @@ func (pc *ProxyClient) Close() {
 	}
 	pc.Client = nil
 
-	if pc.Transport != nil {
-		TotalBytes.Add(atomic.LoadUint64(&pc.Transport.BytesRead))
-		// 手动关闭transport，此处非常重要
-		// 如果没有此处，链接不会释放，goroutine会一直占用，内存会溢出
-		if pc.Transport.Base != nil {
-			if transport, ok := pc.Transport.Base.(*http.Transport); ok {
-				transport.CloseIdleConnections()
-			}
-		}
+	if pc.BytesRead != nil {
+		TotalBytes.Add(atomic.LoadUint64(pc.BytesRead))
 	}
-	pc.Transport = nil
-}
-
-type countingReadCloser struct {
-	io.ReadCloser
-	counter *uint64
-}
-
-func (c *countingReadCloser) Read(p []byte) (int, error) {
-	n, err := c.ReadCloser.Read(p)
-	atomic.AddUint64(c.counter, uint64(n))
-	return n, err
-}
-
-type StatsTransport struct {
-	Base      http.RoundTripper
-	BytesRead uint64
-}
-
-func (s *StatsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := s.Base.RoundTrip(req)
-	if err != nil {
-		return nil, err
-	}
-
-	resp.Body = &countingReadCloser{
-		ReadCloser: resp.Body,
-		counter:    &s.BytesRead,
-	}
-	return resp, nil
 }
