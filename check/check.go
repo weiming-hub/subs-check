@@ -441,7 +441,11 @@ func (pc *ProxyChecker) checkSubscriptionSuccessRate(allProxies []map[string]any
 			}
 			delete(result.Proxy, "sub_url")
 			// 可以保持127.0.0.1:8199/sub/all.yaml中的节点tag
-			// delete(result.Proxy, "sub_tag")
+			if subTag, ok := result.Proxy["sub_tag"].(string); ok {
+				if subTag == "" {
+					delete(result.Proxy, "sub_tag")
+				}
+			}
 		}
 	}
 
