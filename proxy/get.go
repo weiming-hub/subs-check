@@ -84,7 +84,9 @@ func GetProxies() ([]map[string]any, error) {
 
 					// 为每个节点添加订阅链接来源信息和备注
 					proxy["sub_url"] = url
-					proxy["sub_tag"] = tag
+					if tag != "" {
+						proxy["sub_tag"] = tag
+					}
 					proxyChan <- proxy
 				}
 				return
@@ -120,7 +122,9 @@ func GetProxies() ([]map[string]any, error) {
 					}
 					// 为每个节点添加订阅链接来源信息和备注
 					proxyMap["sub_url"] = url
-					proxyMap["sub_tag"] = tag
+					if tag != "" {
+						proxyMap["sub_tag"] = tag
+					}
 					proxyChan <- proxyMap
 				}
 			}

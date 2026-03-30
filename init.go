@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"strings"
 
@@ -72,15 +70,6 @@ func init() {
 	fmt.Println("4. 镜像地址：ghcr.io/beck-8/subs-check:latest")
 	fmt.Println("==================================================")
 
-	if strings.ToLower(os.Getenv("SUB_CHECK_PPROF")) != "" {
-		// 在调试模式下启动 pprof 服务器
-		go func() {
-			slog.Info("Starting pprof server on :61000")
-			if err := http.ListenAndServe(":61000", nil); err != nil {
-				slog.Error("Failed to start pprof server", "error", err)
-			}
-		}()
-	}
 }
 
 func getLogLevel() slog.Level {

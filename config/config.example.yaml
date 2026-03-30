@@ -1,8 +1,13 @@
 # 是否显示进度
 print-progress: true
 
-# 并发线程数
-concurrent: 20
+# 并发线程数（测活阶段使用此值）
+concurrent: 50
+# 测速并发数（默认等于concurrent）
+# 建议设置较低值，避免并发抢带宽导致测速不准
+speed-concurrent: 20
+# 流媒体检测并发数（默认等于concurrent）
+media-concurrent: 20
 # 检查间隔(分钟)
 # 必须大于0，小于等于0会设置间隔1分钟
 check-interval: 120
@@ -55,8 +60,30 @@ node-type:
   # - vmess
   # - vless
 
+# 节点名称过滤，只有匹配任一正则表达式的节点才会被保留
+# 如果为空则不过滤，所有通过测试的节点都会保留
+# 注意：过滤是在测速和流媒体检测完成后进行的，节点名称已包含检测结果标签
+filter:
+  # === 按地区过滤 ===
+  # - "香港|HK|Hong Kong"        # 保留香港节点
+  # - "新加坡|SG|Singapore"      # 保留新加坡节点
+  # - "台湾|TW|Taiwan"           # 保留台湾节点
+  #
+  # === 按 IP 风险过滤（需开启 media-check 和 iprisk）===
+  # - "\\|[0-4]?[0-9]%"          # 保留 IP 风险 < 50% 的节点
+  # - "\\|[0-9]%\\|"             # 保留 IP 风险 < 10% 的节点（个位数）
+  #
+  # === 按平台解锁过滤（需开启 media-check）===
+  # - "GPT⁺|GPT"                 # 保留解锁 OpenAI 的节点
+  # - "NF"                       # 保留解锁 Netflix 的节点
+  # - "GM"                       # 保留解锁 Gemini 的节点
+  # - "D\\+"                     # 保留解锁 Disney+ 的节点
+  # - "YT-"                      # 保留解锁 YouTube Premium 的节点
+
 # 是否开启流媒体检测，其中IP欺诈依赖重命名
 media-check: false
+# 流媒体检测超时时间(秒)，未设置则默认为10秒
+media-check-timeout: 5
 platforms:
   - iprisk
   - tiktok
@@ -187,7 +214,7 @@ success-rate: 0
 sub-urls-remote:
   # - https://example.com/sub-list.txt
   # - https://example.com/sub-list.yaml
-  # - https://raw.githubusercontent.com/beck-8/sub-urls/main/%E5%B0%8F%E8%80%8C%E7%BE%8E.txt
+  - https://raw.githubusercontent.com/beck-8/sub-urls/refs/heads/main/%E5%B0%8F%E8%80%8C%E7%BE%8E.txt
 
 # 订阅地址 支持 clash/mihomo/v2ray/base64 格式的订阅链接
 # 如果用户想明确使用clash类型，那可以在支持的订阅链接结尾加上 &flag=clash.meta
@@ -211,21 +238,16 @@ sub-urls:
   - "https://raw.githubusercontent.com/zhangkaiitugithub/passcro/main/speednodes.yaml"
   - "https://raw.githubusercontent.com/aiboboxx/v2rayfree/refs/heads/main/README.md"
   - "https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/snippets/nodes.meta.yml"
-  - "https://raw.githubusercontent.com/anaer/Sub/refs/heads/main/clash.yaml"
-  - "https://raw.githubusercontent.com/free18/v2ray/refs/heads/main/c.yaml"
   - "https://raw.githubusercontent.com/Ruk1ng001/freeSub/main/clash.yaml"
   - "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/all_configs.txt"
   - "https://raw.githubusercontent.com/ripaojiedian/freenode/main/clash"
   - "https://raw.githubusercontent.com/go4sharing/sub/main/sub.yaml"
   - https://raw.githubusercontent.com/actionsfz/v2ray/refs/heads/master/all.yaml
   - https://raw.githubusercontent.com/Pawdroid/Free-servers/refs/heads/main/sub
-  - https://raw.githubusercontent.com/aiboboxx/v2rayfree/refs/heads/main/v2
   - https://raw.githubusercontent.com/acymz/AutoVPN/main/data/V2.txt
-  - https://raw.githubusercontent.com/ggborr/FREEE-VPN/refs/heads/main/6V2ray
   - https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/wenode.txt
   - https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/v2rayshare.txt
   - https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/nodefree.txt
   - https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/ndnode.txt
   - https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/clashmeta.txt
-  - https://raw.githubusercontent.com/xiaoji235/airport-free/main/v2ray/v2rayshare.txt
   - https://raw.githubusercontent.com/xiaoji235/airport-free/main/v2ray.txt

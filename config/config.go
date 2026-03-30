@@ -5,6 +5,8 @@ import _ "embed"
 type Config struct {
 	PrintProgress        bool     `yaml:"print-progress"`
 	Concurrent           int      `yaml:"concurrent"`
+	SpeedConcurrent      int      `yaml:"speed-concurrent"`
+	MediaConcurrent      int      `yaml:"media-concurrent"`
 	CheckInterval        int      `yaml:"check-interval"`
 	CronExpression       string   `yaml:"cron-expression"`
 	AliveTestUrl         string   `yaml:"alive-test-url"`
@@ -14,6 +16,7 @@ type Config struct {
 	TotalSpeedLimit      int      `yaml:"total-speed-limit"`
 	MinSpeed             int      `yaml:"min-speed"`
 	Timeout              int      `yaml:"timeout"`
+	MediaCheckTimeout    int      `yaml:"media-check-timeout"`
 	FilterRegex          string   `yaml:"filter-regex"`
 	SaveMethod           string   `yaml:"save-method"`
 	WebDAVURL            string   `yaml:"webdav-url"`
@@ -62,6 +65,7 @@ type Config struct {
 	GithubProxy          string   `yaml:"github-proxy"`
 	Proxy                string   `yaml:"proxy"`
 	CallbackScript       string   `yaml:"callback-script"`
+	Filter               []string `yaml:"filter"`
 }
 
 var GlobalConfig = &Config{
@@ -69,6 +73,7 @@ var GlobalConfig = &Config{
 	ListenPort:         ":8199",
 	NotifyTitle:        "🔔 节点状态更新",
 	MihomoOverwriteUrl: "http://127.0.0.1:8199/sub/ACL4SSR_Online_Full.yaml",
+	MediaCheckTimeout:  10,
 	Platforms:          []string{"openai", "youtube", "netflix", "disney", "gemini", "iprisk"},
 	DownloadMB:         20,
 	AliveTestUrl:       "http://gstatic.com/generate_204",

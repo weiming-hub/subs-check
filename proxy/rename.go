@@ -2,7 +2,10 @@ package proxies
 
 import (
 	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/biter777/countries"
 )
 
 var (
@@ -27,15 +30,11 @@ func ResetRenameCounter() {
 	counter = make(map[string]int)
 }
 
-func CountryCodeToFlag(code string) string {
-	if len(code) != 2 {
+func CountryCodeToFlag(countryCode string) string {
+	code := strings.ToUpper(countryCode)
+	country := countries.ByName(code)
+	if country == countries.Unknown {
 		return "❓Other"
 	}
-
-	code = string([]rune(code)[0]&^0x20) + string([]rune(code)[1]&^0x20) // 转成大写（ASCII 位运算）
-
-	r1 := rune(code[0]-'A') + 0x1F1E6
-	r2 := rune(code[1]-'A') + 0x1F1E6
-
-	return string([]rune{r1, r2})
+	return country.Emoji()
 }
